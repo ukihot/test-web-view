@@ -1,7 +1,35 @@
-# Tauri + Leptos
+# vim-browser
 
-This template should help get you started developing with Tauri and Leptos.
+Tauri製WebViewラッパー。vimライクなキーバインドでURLナビゲーションができる。
 
-## Recommended IDE Setup
+## 構成
 
-[VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+```
+index.html        # UI（ステータスライン）
+styles.css        # スタイル
+src-tauri/src/lib.rs  # バックエンド（Tauri）
+```
+
+Webviewを2枚重ねる構成:
+- `browser` webview: フルスクリーンでWebページを表示
+- `ui` webview: 下端22pxの透過オーバーレイ、ステータスラインと入力欄
+
+## 操作
+
+| キー | 動作 |
+|------|------|
+| `:` | URL入力モードを開く（アプリ前面時） |
+| `Enter` | ナビゲート |
+| `Esc` | 入力モードを閉じる |
+
+## 開発
+
+```bash
+cargo tauri dev
+```
+
+## ビルド
+
+```bash
+cargo tauri build
+```

@@ -1,0 +1,29 @@
+[build]
+# リリースビルドをデフォルトに
+# release = true
+
+[target.x86_64-pc-windows-msvc]
+# Windows向けの最適化
+rustflags = [
+    "-C", "target-cpu=native",           # CPUネイティブ命令を使用
+    "-C", "link-arg=/SUBSYSTEM:CONSOLE", # コンソールアプリケーション
+]
+
+[profile.release]
+# 最適化レベル: 3 = 最大速度
+opt-level = 3
+
+# リンク時最適化（LTO）: true = 全体最適化、バイナリサイズ削減
+lto = true
+
+# コード生成ユニット数: 1 = 最大最適化（ビルド時間は長くなる）
+codegen-units = 1
+
+# パニック時の巻き戻しを無効化: バイナリサイズ削減
+panic = "abort"
+
+# デバッグ情報を削除: バイナリサイズ削減
+strip = true
+
+# 増分コンパイルを無効化: リリースビルドでは不要
+incremental = false

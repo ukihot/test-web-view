@@ -4,20 +4,13 @@
   "version": "0.1.0",
   "identifier": "com.tokunagay.test-web-view",
   "build": {
-    "beforeDevCommand": "trunk serve",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "trunk build",
-    "frontendDist": "../dist"
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "frontendDist": "../ui"
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      {
-        "title": "test-web-view",
-        "width": 800,
-        "height": 600
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
