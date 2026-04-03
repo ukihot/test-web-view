@@ -1,0 +1,4 @@
+# Force LF for web frontend files (deno fmt expects LF)
+ui/*.html text eol=lf
+ui/*.css  text eol=lf
+ui/*.js   text eol=lf
