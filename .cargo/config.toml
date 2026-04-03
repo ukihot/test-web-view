@@ -6,7 +6,6 @@
 # Windows向けの最適化
 rustflags = [
     "-C", "target-cpu=native",           # CPUネイティブ命令を使用
-    "-C", "link-arg=/SUBSYSTEM:CONSOLE", # コンソールアプリケーション
 ]
 
 [profile.release]
