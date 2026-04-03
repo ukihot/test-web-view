@@ -38,3 +38,11 @@ pub struct ResourceEntry {
     pub transfer_size: f64,
     pub initiator_type: String,
 }
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct ActivityEntry {
+    pub kind: String,
+    pub detail: String,
+    pub direction: String,
+    pub timestamp: f64,
+}

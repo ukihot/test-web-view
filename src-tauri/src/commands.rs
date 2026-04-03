@@ -1,7 +1,7 @@
 use tauri::{AppHandle, State};
 
 use crate::{
-    domain::{Mode, ResourceEntry, Snapshot},
+    domain::{ActivityEntry, Mode, ResourceEntry, Snapshot},
     helpers::{
         emit_snapshot, emit_to_ui, get_browser, navigate_browser, normalize_url, set_focus_for_mode,
     },
@@ -86,5 +86,17 @@ pub fn report_title(
 #[tauri::command]
 pub fn report_resources(app: AppHandle, resources: Vec<ResourceEntry>) -> Result<(), String> {
     emit_to_ui(&app, "resource-log", &resources);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn report_activity(app: AppHandle, entries: Vec<ActivityEntry>) -> Result<(), String> {
+    emit_to_ui(&app, "activity-log", &entries);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn report_auth_tokens(app: AppHandle, tokens: Vec<String>) -> Result<(), String> {
+    emit_to_ui(&app, "auth-tokens", &tokens);
     Ok(())
 }

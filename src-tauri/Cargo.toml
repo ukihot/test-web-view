@@ -1,6 +1,6 @@
 [package]
 name = "test-web-view"
-version = "0.9.0"
+version = "0.9.1"
 description = "Minimal vim-keybinding WebView browser wrapper"
 authors = ["tokunaga.y@tyco.co.jp"]
 edition = "2024"

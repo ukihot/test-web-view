@@ -9,7 +9,7 @@ use crate::{
     constants::{BROWSER_LABEL, STATUS_H, UI_LABEL},
     domain::{Buffer, Mode},
     helpers::emit_to_ui,
-    scripts::BROWSER_INIT_SCRIPT,
+    scripts::{ACTIVITY_INIT_SCRIPT, BROWSER_INIT_SCRIPT},
     state::{AppState, ManagedState},
 };
 
@@ -35,6 +35,8 @@ pub fn run() {
             commands::close_current_buffer,
             commands::report_title,
             commands::report_resources,
+            commands::report_activity,
+            commands::report_auth_tokens,
         ])
         .setup(|app| {
             let win = WindowBuilder::new(app, "main")
@@ -54,6 +56,7 @@ pub fn run() {
                     WebviewUrl::External("about:blank".parse().unwrap()),
                 )
                 .initialization_script(BROWSER_INIT_SCRIPT)
+                .initialization_script(ACTIVITY_INIT_SCRIPT)
                 .on_page_load(move |wv, payload| {
                     let url = payload.url().to_string();
                     if url == "about:blank" {
@@ -81,6 +84,24 @@ pub fn run() {
                                 "  });",
                                 "  window.__TAURI__.core.invoke('report_resources',",
                                 "    {resources:entries}).catch(function(){});",
+                                "})();"
+                            ));
+                            let _ = wv.eval(concat!(
+                                "(function(){",
+                                "  if(!window.__TAURI__?.core) return;",
+                                "  var RE=/token|session|auth|jwt|sid|csrf|api.?key|access|bearer|refresh|sso|oidc|saml/i;",
+                                "  var t=[];",
+                                "  try{(document.cookie||'').split(';').forEach(function(c){",
+                                "    var n=c.split('=')[0].trim(); if(RE.test(n)) t.push('c:'+n);",
+                                "  });}catch(_){}",
+                                "  try{for(var i=0;i<localStorage.length;i++){",
+                                "    var k=localStorage.key(i); if(RE.test(k)) t.push('ls:'+k);",
+                                "  }}catch(_){}",
+                                "  try{for(var i=0;i<sessionStorage.length;i++){",
+                                "    var k=sessionStorage.key(i); if(RE.test(k)) t.push('ss:'+k);",
+                                "  }}catch(_){}",
+                                "  window.__TAURI__.core.invoke('report_auth_tokens',",
+                                "    {tokens:t}).catch(function(){});",
                                 "})();"
                             ));
                         }
@@ -116,9 +137,14 @@ pub fn run() {
             });
 
             // 起動直後はUIにフォーカスを当ててキー入力を即受付可能にする
-            if let Some(ui) = app.get_webview(UI_LABEL) {
-                let _ = ui.set_focus();
-            }
+            // webview初期化完了を待つため少し遅延させる
+            let focus_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                if let Some(ui) = focus_handle.get_webview(UI_LABEL) {
+                    let _ = ui.set_focus();
+                }
+            });
 
             Ok(())
         })

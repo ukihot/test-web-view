@@ -24,13 +24,16 @@ const $ = (id) => {
 };
 
 const dom = Object.freeze({
-  modeIndicator: $("mode-indicator"),
-  dot:           $("dot"),
-  urlText:       $("url-text"),
-  display:       $("display"),
-  inputMode:     $("input-mode"),
-  urlInput:      $("url-input"),
-  buffers:       $("buffers"),
+  modeIndicator: $('mode-indicator'),
+  authBadge:     $('auth-badge'),
+  dot:           $('dot'),
+  urlText:       $('url-text'),
+  display:       $('display'),
+  inputMode:     $('input-mode'),
+  urlInput:      $('url-input'),
+  activity:      $('activity'),
+  activityReel:  $('activity-reel'),
+  buffers:       $('buffers'),
 });
 
 // ---------------------------------------------------------------------------
@@ -101,6 +104,138 @@ class FidgetQueue {
 }
 
 const fidget = new FidgetQueue();
+
+// ---------------------------------------------------------------------------
+// ActivityTicker — retro engine activity monitor in center section
+// ---------------------------------------------------------------------------
+
+const ACT_TYPE_MAP = Object.freeze({
+  ws: "ws", fetch: "fetch", xhr: "xhr", sw: "sw",
+  beacon: "beacon", sse: "sse", net: "net",
+  store: "store", cookie: "cookie",
+});
+
+class ActivityTicker {
+  #reel;
+  #rowH = 12;
+  #viewH = 36;
+  #current = 0;   // current scroll offset (animated)
+  #target = 0;    // target scroll offset
+  #rafId = 0;
+  #maxKeep = 21;
+  #ease = 0.09;   // lerp factor — lower = smoother/slower
+  #boundTick;
+
+  constructor(reel) {
+    this.#reel = reel;
+    this.#boundTick = () => this.#tick();
+  }
+
+  push(entries) {
+    for (const e of entries) {
+      const typeBase = e.kind.split('.')[0];
+      const cls = ACT_TYPE_MAP[typeBase] || 'net';
+
+      let label = e.detail;
+      label = label.replace(/https?:\/\/([^\/\s]+)(\/[^\s]*)?/g, (_, host, path) => {
+        const h = host.replace(/^www\./, '');
+        const file = path ? path.split('/').pop() : '';
+        return h + (file ? '/' + file : '');
+      });
+      if (label.length > 48) label = label.slice(0, 48);
+
+      const row = document.createElement('div');
+      row.className = 'act-row act-' + cls;
+      row.innerHTML =
+        `<span class="act-dir">${e.direction}</span>` +
+        `<span class="act-tag">${e.kind.replace('.', ':')}</span>` +
+        `<span class="act-detail">${label}</span>`;
+      this.#reel.appendChild(row);
+    }
+
+    // update target to show latest row
+    const totalH = this.#reel.children.length * this.#rowH;
+    this.#target = Math.max(0, totalH - this.#viewH);
+
+    this.#gc();
+    this.#startLoop();
+  }
+
+  #startLoop() {
+    if (!this.#rafId) this.#rafId = requestAnimationFrame(this.#boundTick);
+  }
+
+  #tick() {
+    const diff = this.#target - this.#current;
+
+    if (Math.abs(diff) < 0.3) {
+      // snap & stop
+      this.#current = this.#target;
+      this.#applyTransform();
+      this.#rafId = 0;
+      return;
+    }
+
+    // smooth lerp
+    this.#current += diff * this.#ease;
+    this.#applyTransform();
+    this.#rafId = requestAnimationFrame(this.#boundTick);
+  }
+
+  #applyTransform() {
+    // translate the reel strip
+    this.#reel.style.transform = `translateY(${-this.#current}px)`;
+
+    // per-row drum rotation based on viewport position
+    const rows = this.#reel.children;
+    const center = this.#viewH / 2;
+    const R = 50; // drum radius feel
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowCenter = i * this.#rowH + this.#rowH / 2 - this.#current;
+      const dist = (rowCenter - center) / center; // -1 … +1 in viewport, can go beyond
+      const clamped = Math.max(-1.5, Math.min(1.5, dist));
+
+      // rotation: top rows tilt back, bottom rows tilt forward
+      const rx = clamped * -20;
+      // depth: edges recede
+      const tz = (1 - Math.abs(clamped)) * 2 - 2;
+      // opacity: edges fade
+      const op = Math.max(0, 1 - Math.abs(clamped) * 0.7);
+
+      rows[i].style.transform = `perspective(120px) rotateX(${rx.toFixed(1)}deg) translateZ(${tz.toFixed(1)}px)`;
+      rows[i].style.opacity = op.toFixed(2);
+    }
+  }
+
+  #gc() {
+    if (this.#reel.children.length <= this.#maxKeep) return;
+
+    const removeCount = this.#reel.children.length - this.#maxKeep;
+    const removedH = removeCount * this.#rowH;
+
+    for (let i = 0; i < removeCount; i++) {
+      this.#reel.removeChild(this.#reel.firstChild);
+    }
+
+    // adjust positions so visual stays put
+    this.#current -= removedH;
+    this.#target -= removedH;
+    if (this.#current < 0) this.#current = 0;
+    if (this.#target < 0) this.#target = 0;
+  }
+
+  clear() {
+    cancelAnimationFrame(this.#rafId);
+    this.#rafId = 0;
+    this.#current = 0;
+    this.#target = 0;
+    while (this.#reel.firstChild) this.#reel.removeChild(this.#reel.firstChild);
+    this.#reel.style.transform = 'translateY(0)';
+  }
+}
+
+const activityTicker = new ActivityTicker(dom.activityReel);
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -181,6 +316,7 @@ listen("page-load-start", (e) => {
   state.currentUrl = e.payload;
   dom.dot.className = "loading";
   fidget.clear();
+  activityTicker.clear();
   dom.urlText.textContent = e.payload;
   spinner.start();
 });
@@ -204,6 +340,23 @@ listen("resource-log", (e) => {
     .slice(0, 20)
     .map(formatEntry);
   fidget.enqueue(sorted);
+});
+
+listen("activity-log", (e) => {
+  activityTicker.push(e.payload);
+});
+
+listen("auth-tokens", (e) => {
+  const tokens = e.payload || [];
+  if (tokens.length > 0) {
+    dom.authBadge.className = "has-tokens";
+    dom.authBadge.textContent = "\uD83D\uDD11" + tokens.length;
+    dom.authBadge.title = tokens.join("\n");
+  } else {
+    dom.authBadge.className = "hidden";
+    dom.authBadge.textContent = "";
+    dom.authBadge.title = "";
+  }
 });
 
 // ---------------------------------------------------------------------------
