@@ -26,13 +26,19 @@ pub fn navigate_to(
     app: AppHandle,
     state: State<'_, ManagedState>,
     url: String,
+    new_buffer: Option<bool>,
 ) -> Result<(), String> {
     let normalized = normalize_url(&url);
     let parsed: url::Url = normalized
         .parse()
         .map_err(|e: url::ParseError| e.to_string())?;
 
-    let snap = state.lock_or_err()?.add_buffer(normalized.clone());
+    let mut st = state.lock_or_err()?;
+    let snap = if new_buffer.unwrap_or(false) {
+        st.add_buffer(normalized.clone())
+    } else {
+        st.navigate_active(normalized.clone())
+    };
     emit_snapshot(&app, &snap);
     emit_to_ui(&app, "page-load-start", &normalized);
 
@@ -55,6 +61,14 @@ pub fn buffer_next(app: AppHandle, state: State<'_, ManagedState>) -> Result<(),
 pub fn buffer_prev(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
     let (snap, nav_url) = state.lock_or_err()?.cycle_buffer(-1).ok_or("no buffers")?;
     emit_snapshot(&app, &snap);
+    navigate_browser(&app, &nav_url)
+}
+
+#[tauri::command]
+pub fn close_current_buffer(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
+    let (snap, nav_url) = state.lock_or_err()?.close_active_buffer();
+    emit_snapshot(&app, &snap);
+    emit_to_ui(&app, "page-load-start", &nav_url);
     navigate_browser(&app, &nav_url)
 }
 

@@ -23,6 +23,11 @@ pub const BROWSER_INIT_SCRIPT: &str = r#"
             tryInvoke("toggle_mode");
             return;
         }
+        if (e.ctrlKey && (e.key === "w" || e.key === "W")) {
+            e.preventDefault();
+            tryInvoke("close_current_buffer");
+            return;
+        }
         if (e.key === "j") {
             const now = Date.now();
             if (now - lastJ < JJ_THRESHOLD) {

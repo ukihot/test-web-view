@@ -73,6 +73,8 @@ jobs:
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
         with:
+          shared-key: windows-tauri-release
+          save-if: "true"
           workspaces: |
             . -> target
             src-tauri -> src-tauri/target
@@ -90,13 +92,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          TOKEN="${{ secrets.RELEASE_TOKEN }}"
           TAG="${{ steps.release_meta.outputs.tag }}"
+
+          if [[ -z "$TOKEN" ]]; then
+            echo "secrets.RELEASE_TOKEN is required for workflow_dispatch tag push."
+            echo "Create a PAT with repository contents write + workflows write, then set RELEASE_TOKEN."
+            exit 1
+          fi
 
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin"
           else
             git tag "$TAG"
-            git push origin "$TAG"
+            git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" "$TAG"
           fi
 
       - name: Ensure release assets exist

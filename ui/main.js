@@ -225,13 +225,17 @@ function closeInput() {
   dom.display.style.display = "flex";
 }
 
-dom.inputMode.addEventListener("submit", (e) => {
-  e.preventDefault();
+function submitNavigation({ newBuffer }) {
   const url = dom.urlInput.value.trim();
   closeInput();
   if (url && url !== "https://") {
-    invoke("navigate_to", { url });
+    invoke("navigate_to", { url, newBuffer });
   }
+}
+
+dom.inputMode.addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitNavigation({ newBuffer: false });
 });
 
 dom.urlInput.addEventListener("keydown", (e) => {
@@ -239,6 +243,12 @@ dom.urlInput.addEventListener("keydown", (e) => {
     e.preventDefault();
     e.stopPropagation();
     closeInput();
+    return;
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+    submitNavigation({ newBuffer: e.ctrlKey });
   }
 });
 
@@ -254,6 +264,12 @@ const COMMAND_KEYS = Object.freeze({
 
 document.addEventListener("keydown", (e) => {
   if (state.inputOpen || e.isComposing) return;
+
+  if (e.ctrlKey && (e.key === "w" || e.key === "W")) {
+    e.preventDefault();
+    invoke("close_current_buffer");
+    return;
+  }
 
   // Esc → toggle mode (both modes)
   if (e.key === "Escape") {

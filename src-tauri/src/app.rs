@@ -7,7 +7,7 @@ use tauri::{
 use crate::{
     commands,
     constants::{BROWSER_LABEL, STATUS_H, UI_LABEL},
-    domain::Mode,
+    domain::{Buffer, Mode},
     helpers::emit_to_ui,
     scripts::BROWSER_INIT_SCRIPT,
     state::{AppState, ManagedState},
@@ -18,9 +18,13 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(ManagedState(std::sync::Mutex::new(AppState {
             mode: Mode::default(),
-            buffers: Vec::new(),
+            buffers: vec![Buffer {
+                id: 1,
+                url: "about:blank".to_owned(),
+                title: "about:blank".to_owned(),
+            }],
             active: 0,
-            next_id: 1,
+            next_id: 2,
         })))
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
@@ -28,6 +32,7 @@ pub fn run() {
             commands::navigate_to,
             commands::buffer_next,
             commands::buffer_prev,
+            commands::close_current_buffer,
             commands::report_title,
             commands::report_resources,
         ])

@@ -24,10 +24,14 @@ Webviewを2枚重ねる構成:
 | `:` | COMMAND | URL入力モードを開く |
 | `h` | COMMAND | 前のバッファへ |
 | `l` | COMMAND | 次のバッファへ |
-| `Enter` | 入力中 | ナビゲート（新規バッファ） |
+| `Ctrl+w` | 両方 | 現在のバッファを閉じる |
+| `Enter` | 入力中 | 現在のバッファでページ遷移 |
+| `Ctrl+Enter` | 入力中 | 新規バッファを追加してページ遷移 |
 | `Esc` | 入力中 | 入力モードを閉じる |
 
 バッファ一覧はステータスライン右端に `1:host 2:host` 形式で表示される。
+
+起動時には `about:blank` のバッファが1つ用意される。最後の1バッファを閉じた場合も空にはならず、`about:blank` に戻る。
 
 ## 開発
 
@@ -41,18 +45,3 @@ cargo tauri dev
 cargo tauri build
 ```
 
-## GitHubリリース自動化
-
-`.github/workflows/release.yml` で、タグ・リリース・配布物アップロードを自動化している。
-
-- `workflow_dispatch`:
-	- `version` (例: `0.1.1`) を入力して実行
-	- `v0.1.1` タグを自動作成
-	- `cargo tauri build` 実行
-	- `src-tauri/target/release/bundle/**` の成果物を GitHub Release に添付
-- `push tag`:
-	- `v*.*.*` タグを push した場合も同じビルド・公開フローを実行
-
-必要権限:
-
-- `contents: write` (タグ push / Release 作成 / アセット添付)

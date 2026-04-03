@@ -35,6 +35,18 @@ impl AppState {
         self.snapshot()
     }
 
+    pub fn navigate_active(&mut self, url: String) -> Snapshot {
+        if self.buffers.is_empty() {
+            return self.add_buffer(url);
+        }
+        if let Some(buf) = self.buffers.get_mut(self.active) {
+            buf.url = url;
+            buf.title.clear();
+        }
+        self.mode = Mode::Normal;
+        self.snapshot()
+    }
+
     pub fn cycle_buffer(&mut self, delta: isize) -> Option<(Snapshot, String)> {
         let len = self.buffers.len();
         if len == 0 {
@@ -50,6 +62,30 @@ impl AppState {
             buf.title = title;
         }
         self.snapshot()
+    }
+
+    pub fn close_active_buffer(&mut self) -> (Snapshot, String) {
+        if self.buffers.is_empty() {
+            let snap = self.add_buffer("about:blank".to_owned());
+            return (snap, "about:blank".to_owned());
+        }
+
+        if self.buffers.len() == 1 {
+            if let Some(buf) = self.buffers.get_mut(0) {
+                buf.url = "about:blank".to_owned();
+                buf.title = "about:blank".to_owned();
+            }
+            self.active = 0;
+            let snap = self.snapshot();
+            return (snap, "about:blank".to_owned());
+        }
+
+        self.buffers.remove(self.active);
+        if self.active >= self.buffers.len() {
+            self.active = self.buffers.len() - 1;
+        }
+        let nav_url = self.buffers[self.active].url.clone();
+        (self.snapshot(), nav_url)
     }
 }
 
