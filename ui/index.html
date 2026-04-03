@@ -1,27 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
-  <div id="status">
-    <div id="left-section">
-      <span id="mode-indicator">NORMAL</span>
-      <span id="auth-badge" class="hidden"></span>
-      <div id="display">
-        <span id="dot">●</span>
-        <span id="url-text"></span>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="status">
+      <div id="left-section">
+        <span id="mode-indicator">NORMAL</span>
+        <span id="auth-badge" class="hidden"></span>
+        <div id="display">
+          <span id="dot">●</span>
+          <span id="url-text"></span>
+        </div>
+        <form id="input-mode">
+          <span id="mode-label">:</span>
+          <input id="url-input" type="text" spellcheck="false" autocomplete="off" />
+        </form>
       </div>
-      <form id="input-mode">
-        <span id="mode-label">:</span>
-        <input id="url-input" type="text" spellcheck="false" autocomplete="off" />
-      </form>
+      <div id="activity"><div id="activity-reel"></div></div>
+      <div id="buffers"></div>
     </div>
-    <div id="activity"><div id="activity-reel"></div></div>
-    <div id="buffers"></div>
-  </div>
 
-  <script src="/main.js"></script>
-</body>
+    <script src="/main.js"></script>
+  </body>
 </html>

@@ -70,6 +70,17 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Lint & format check (frontend)
+        shell: bash
+        run: |
+          deno fmt --check ui/
+          deno lint ui/
+
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
         with:

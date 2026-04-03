@@ -8,7 +8,7 @@ const { invoke } = window.__TAURI__.core;
 // ---------------------------------------------------------------------------
 
 const MODE = Object.freeze({ NORMAL: "NORMAL", COMMAND: "COMMAND" });
-const SPINNER_FRAMES = Object.freeze(["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]);
+const SPINNER_FRAMES = Object.freeze(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]);
 const SPINNER_INTERVAL = 80;
 const FIDGET_INTERVAL = 120;
 const JJ_THRESHOLD = 400;
@@ -24,16 +24,16 @@ const $ = (id) => {
 };
 
 const dom = Object.freeze({
-  modeIndicator: $('mode-indicator'),
-  authBadge:     $('auth-badge'),
-  dot:           $('dot'),
-  urlText:       $('url-text'),
-  display:       $('display'),
-  inputMode:     $('input-mode'),
-  urlInput:      $('url-input'),
-  activity:      $('activity'),
-  activityReel:  $('activity-reel'),
-  buffers:       $('buffers'),
+  modeIndicator: $("mode-indicator"),
+  authBadge: $("auth-badge"),
+  dot: $("dot"),
+  urlText: $("url-text"),
+  display: $("display"),
+  inputMode: $("input-mode"),
+  urlInput: $("url-input"),
+  activity: $("activity"),
+  activityReel: $("activity-reel"),
+  buffers: $("buffers"),
 });
 
 // ---------------------------------------------------------------------------
@@ -110,20 +110,26 @@ const fidget = new FidgetQueue();
 // ---------------------------------------------------------------------------
 
 const ACT_TYPE_MAP = Object.freeze({
-  ws: "ws", fetch: "fetch", xhr: "xhr", sw: "sw",
-  beacon: "beacon", sse: "sse", net: "net",
-  store: "store", cookie: "cookie",
+  ws: "ws",
+  fetch: "fetch",
+  xhr: "xhr",
+  sw: "sw",
+  beacon: "beacon",
+  sse: "sse",
+  net: "net",
+  store: "store",
+  cookie: "cookie",
 });
 
 class ActivityTicker {
   #reel;
   #rowH = 12;
   #viewH = 36;
-  #current = 0;   // current scroll offset (animated)
-  #target = 0;    // target scroll offset
+  #current = 0; // current scroll offset (animated)
+  #target = 0; // target scroll offset
   #rafId = 0;
   #maxKeep = 21;
-  #ease = 0.09;   // lerp factor — lower = smoother/slower
+  #ease = 0.09; // lerp factor — lower = smoother/slower
   #boundTick;
 
   constructor(reel) {
@@ -133,22 +139,21 @@ class ActivityTicker {
 
   push(entries) {
     for (const e of entries) {
-      const typeBase = e.kind.split('.')[0];
-      const cls = ACT_TYPE_MAP[typeBase] || 'net';
+      const typeBase = e.kind.split(".")[0];
+      const cls = ACT_TYPE_MAP[typeBase] || "net";
 
       let label = e.detail;
       label = label.replace(/https?:\/\/([^\/\s]+)(\/[^\s]*)?/g, (_, host, path) => {
-        const h = host.replace(/^www\./, '');
-        const file = path ? path.split('/').pop() : '';
-        return h + (file ? '/' + file : '');
+        const h = host.replace(/^www\./, "");
+        const file = path ? path.split("/").pop() : "";
+        return h + (file ? "/" + file : "");
       });
       if (label.length > 48) label = label.slice(0, 48);
 
-      const row = document.createElement('div');
-      row.className = 'act-row act-' + cls;
-      row.innerHTML =
-        `<span class="act-dir">${e.direction}</span>` +
-        `<span class="act-tag">${e.kind.replace('.', ':')}</span>` +
+      const row = document.createElement("div");
+      row.className = "act-row act-" + cls;
+      row.innerHTML = `<span class="act-dir">${e.direction}</span>` +
+        `<span class="act-tag">${e.kind.replace(".", ":")}</span>` +
         `<span class="act-detail">${label}</span>`;
       this.#reel.appendChild(row);
     }
@@ -189,7 +194,6 @@ class ActivityTicker {
     // per-row drum rotation based on viewport position
     const rows = this.#reel.children;
     const center = this.#viewH / 2;
-    const R = 50; // drum radius feel
 
     for (let i = 0; i < rows.length; i++) {
       const rowCenter = i * this.#rowH + this.#rowH / 2 - this.#current;
@@ -203,7 +207,9 @@ class ActivityTicker {
       // opacity: edges fade
       const op = Math.max(0, 1 - Math.abs(clamped) * 0.7);
 
-      rows[i].style.transform = `perspective(120px) rotateX(${rx.toFixed(1)}deg) translateZ(${tz.toFixed(1)}px)`;
+      rows[i].style.transform = `perspective(120px) rotateX(${rx.toFixed(1)}deg) translateZ(${
+        tz.toFixed(1)
+      }px)`;
       rows[i].style.opacity = op.toFixed(2);
     }
   }
@@ -231,7 +237,7 @@ class ActivityTicker {
     this.#current = 0;
     this.#target = 0;
     while (this.#reel.firstChild) this.#reel.removeChild(this.#reel.firstChild);
-    this.#reel.style.transform = 'translateY(0)';
+    this.#reel.style.transform = "translateY(0)";
   }
 }
 
@@ -269,7 +275,11 @@ function renderBuffers() {
     el.className = i === state.activeBuffer ? "buf active" : "buf";
     let label = buf.title;
     if (!label) {
-      try { label = new URL(buf.url).hostname; } catch { label = buf.url; }
+      try {
+        label = new URL(buf.url).hostname;
+      } catch {
+        label = buf.url;
+      }
     }
     el.textContent = `${i + 1}:${label}`;
     dom.buffers.appendChild(el);
@@ -410,9 +420,15 @@ dom.urlInput.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------------------------
 
 const COMMAND_KEYS = Object.freeze({
-  ":"() { openInput(); },
-  l()  { invoke("buffer_next"); },
-  h()  { invoke("buffer_prev"); },
+  ":"() {
+    openInput();
+  },
+  l() {
+    invoke("buffer_next");
+  },
+  h() {
+    invoke("buffer_prev");
+  },
 });
 
 document.addEventListener("keydown", (e) => {

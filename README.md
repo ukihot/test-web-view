@@ -11,6 +11,7 @@ src-tauri/src/lib.rs  # バックエンド（Tauri）
 ```
 
 Webviewを2枚重ねる構成:
+
 - `browser` webview: フルスクリーンでWebページを表示
 - `ui` webview: 下端36pxの透過オーバーレイ、ステータスラインと入力欄
 
@@ -18,16 +19,16 @@ Webviewを2枚重ねる構成:
 
 モードは **NORMAL** と **COMMAND** の2つ。ステータスラインの左端に表示される。
 
-| キー | モード | 動作 |
-|------|--------|------|
-| `Esc` / `jj` (210ms以内) | 両方 | モード切替 |
-| `:` | COMMAND | URL入力モードを開く |
-| `h` | COMMAND | 前のバッファへ |
-| `l` | COMMAND | 次のバッファへ |
-| `Ctrl+w` | 両方 | 現在のバッファを閉じる |
-| `Enter` | 入力中 | 現在のバッファでページ遷移 |
-| `Ctrl+Enter` | 入力中 | 新規バッファを追加してページ遷移 |
-| `Esc` | 入力中 | 入力モードを閉じる |
+| キー                     | モード  | 動作                             |
+| ------------------------ | ------- | -------------------------------- |
+| `Esc` / `jj` (210ms以内) | 両方    | モード切替                       |
+| `:`                      | COMMAND | URL入力モードを開く              |
+| `h`                      | COMMAND | 前のバッファへ                   |
+| `l`                      | COMMAND | 次のバッファへ                   |
+| `Ctrl+w`                 | 両方    | 現在のバッファを閉じる           |
+| `Enter`                  | 入力中  | 現在のバッファでページ遷移       |
+| `Ctrl+Enter`             | 入力中  | 新規バッファを追加してページ遷移 |
+| `Esc`                    | 入力中  | 入力モードを閉じる               |
 
 バッファ一覧はステータスライン右端に `1:host 2:host` 形式で表示される。
 
@@ -41,17 +42,17 @@ Webviewを2枚重ねる構成:
 
 `ACTIVITY_INIT_SCRIPT` (browser webviewの初期化スクリプト) が以下のAPIをフックし、通信・状態変化をキャプチャする:
 
-| 種別 | フック方法 | 内容 |
-|------|-----------|------|
-| `ws.*` | `WebSocket` コンストラクタ差し替え | 接続/送信/受信/切断 |
-| `fetch.*` | `window.fetch` ラップ | リクエスト/レスポンス/エラー |
-| `xhr.*` | `XMLHttpRequest.prototype` パッチ | open/send/loadend |
-| `beacon` | `navigator.sendBeacon` ラップ | ビーコン送信 |
-| `sse.*` | `EventSource` コンストラクタ差し替え | SSE接続/メッセージ/エラー |
-| `sw.*` | `navigator.serviceWorker` 監視 | SW登録/コントローラー変更 |
-| `net.*` | `PerformanceObserver` (resource) | リアルタイムリソース読込 |
-| `store.*` | `Storage.prototype.setItem` パッチ | localStorage書き込み |
-| `cookie.*` | `CookieStore` change イベント | Cookie変更/削除 |
+| 種別       | フック方法                           | 内容                         |
+| ---------- | ------------------------------------ | ---------------------------- |
+| `ws.*`     | `WebSocket` コンストラクタ差し替え   | 接続/送信/受信/切断          |
+| `fetch.*`  | `window.fetch` ラップ                | リクエスト/レスポンス/エラー |
+| `xhr.*`    | `XMLHttpRequest.prototype` パッチ    | open/send/loadend            |
+| `beacon`   | `navigator.sendBeacon` ラップ        | ビーコン送信                 |
+| `sse.*`    | `EventSource` コンストラクタ差し替え | SSE接続/メッセージ/エラー    |
+| `sw.*`     | `navigator.serviceWorker` 監視       | SW登録/コントローラー変更    |
+| `net.*`    | `PerformanceObserver` (resource)     | リアルタイムリソース読込     |
+| `store.*`  | `Storage.prototype.setItem` パッチ   | localStorage書き込み         |
+| `cookie.*` | `CookieStore` change イベント        | Cookie変更/削除              |
 
 Tauri IPC通信 (`ipc.localhost`, `tauri.localhost`, `__TAURI_IPC__`) は自動除外され、フィードバックループを防止する。
 
@@ -71,11 +72,13 @@ current (現在位置) ──→ 自然な減速カーブで滑らかに収束
 **なぜCSS transitionを使わないか:**
 
 ネットワークアクティビティは不定期かつ高頻度で発生する。CSS transitionだと:
+
 1. transition中に新しいエントリが来るとtargetが変わり、中間位置でカクつく
 2. バッチ化しても「バッチ間の停止」が発生し、流れが途切れる
 3. `transitionend` の管理が複雑になる
 
 rAF + lerpなら:
+
 1. いつ何個エントリが来ても `target` を更新するだけ — 現在進行中の動きに自然に合流
 2. 行間で停止しない — 常に目標に向かって動き続ける
 3. 状態管理がシンプル — `current` と `target` の2変数のみ
@@ -113,4 +116,3 @@ cargo tauri dev
 ```bash
 cargo tauri build
 ```
-
