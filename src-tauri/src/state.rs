@@ -23,6 +23,24 @@ impl AppState {
         self.snapshot()
     }
 
+    pub fn enter_command(&mut self) -> Option<Snapshot> {
+        if self.mode.is_normal() {
+            self.mode = Mode::Command;
+            Some(self.snapshot())
+        } else {
+            None
+        }
+    }
+
+    pub fn enter_normal(&mut self) -> Option<Snapshot> {
+        if self.mode.is_command() {
+            self.mode = Mode::Normal;
+            Some(self.snapshot())
+        } else {
+            None
+        }
+    }
+
     pub fn add_buffer(&mut self, url: String) -> Snapshot {
         self.buffers.push(Buffer {
             id: self.next_id,

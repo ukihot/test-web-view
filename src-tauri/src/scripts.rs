@@ -15,14 +15,17 @@ pub const BROWSER_INIT_SCRIPT: &str = r#"
 
     document.addEventListener("keydown", function(e) {
         if (e.isComposing) return;
+
+        // Esc is ALWAYS captured regardless of focus target.
+        if (e.key === "Escape") {
+            e.preventDefault();
+            tryInvoke("enter_command");
+            return;
+        }
+
         const tag = (e.target.tagName || "").toLowerCase();
         if (e.target.isContentEditable || EDITABLE_TAGS.has(tag)) return;
 
-        if (e.key === "Escape") {
-            e.preventDefault();
-            tryInvoke("toggle_mode");
-            return;
-        }
         if (e.ctrlKey && (e.key === "w" || e.key === "W")) {
             e.preventDefault();
             tryInvoke("close_current_buffer");
@@ -33,7 +36,7 @@ pub const BROWSER_INIT_SCRIPT: &str = r#"
             if (now - lastJ < JJ_THRESHOLD) {
                 lastJ = 0;
                 e.preventDefault();
-                tryInvoke("toggle_mode");
+                tryInvoke("enter_command");
             } else {
                 lastJ = now;
             }

@@ -440,20 +440,20 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Esc → toggle mode (both modes)
+  // Esc → back to NORMAL mode
   if (e.key === "Escape") {
     e.preventDefault();
-    invoke("toggle_mode");
+    invoke("enter_normal");
     return;
   }
 
-  // jj → toggle mode (both modes, 400ms window)
+  // jj → back to NORMAL mode (400ms window)
   if (e.key === "j") {
     const now = Date.now();
     if (now - state.lastJ < JJ_THRESHOLD) {
       state.lastJ = 0;
       e.preventDefault();
-      invoke("toggle_mode");
+      invoke("enter_normal");
     } else {
       state.lastJ = now;
     }

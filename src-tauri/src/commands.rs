@@ -22,6 +22,24 @@ pub fn toggle_mode(app: AppHandle, state: State<'_, ManagedState>) -> Result<Sna
 }
 
 #[tauri::command]
+pub fn enter_command(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
+    if let Some(snap) = state.lock_or_err()?.enter_command() {
+        emit_snapshot(&app, &snap);
+        set_focus_for_mode(&app, snap.mode);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn enter_normal(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
+    if let Some(snap) = state.lock_or_err()?.enter_normal() {
+        emit_snapshot(&app, &snap);
+        set_focus_for_mode(&app, snap.mode);
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn navigate_to(
     app: AppHandle,
     state: State<'_, ManagedState>,

@@ -15,6 +15,14 @@ impl Mode {
             Self::Command => Self::Normal,
         }
     }
+
+    pub const fn is_normal(self) -> bool {
+        matches!(self, Self::Normal)
+    }
+
+    pub const fn is_command(self) -> bool {
+        matches!(self, Self::Command)
+    }
 }
 
 #[derive(Clone, Serialize)]

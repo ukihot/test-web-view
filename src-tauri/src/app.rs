@@ -29,6 +29,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
             commands::toggle_mode,
+            commands::enter_command,
+            commands::enter_normal,
             commands::navigate_to,
             commands::buffer_next,
             commands::buffer_prev,
