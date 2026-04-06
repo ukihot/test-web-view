@@ -90,6 +90,13 @@ jobs:
             . -> target
             src-tauri -> src-tauri/target
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Run tests
+        shell: bash
+        run: cargo nextest run
+
       - name: Install Tauri CLI
         shell: bash
         run: cargo install tauri-cli --locked

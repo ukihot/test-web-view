@@ -116,3 +116,247 @@ impl ManagedState {
             .map_err(|e| format!("state lock poisoned: {e}"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_state() -> AppState {
+        AppState {
+            mode: Mode::default(),
+            buffers: vec![Buffer {
+                id: 1,
+                url: "about:blank".to_owned(),
+                title: "about:blank".to_owned(),
+            }],
+            active: 0,
+            next_id: 2,
+        }
+    }
+
+    // -- snapshot ---------------------------------------------------------
+
+    #[test]
+    fn snapshot_reflects_current_state() {
+        let st = new_state();
+        let snap = st.snapshot();
+        assert_eq!(snap.mode, Mode::Normal);
+        assert_eq!(snap.active, 0);
+        assert_eq!(snap.buffers.len(), 1);
+    }
+
+    // -- toggle_mode ------------------------------------------------------
+
+    #[test]
+    fn toggle_mode_normal_to_command() {
+        let mut st = new_state();
+        let snap = st.toggle_mode();
+        assert_eq!(snap.mode, Mode::Command);
+    }
+
+    #[test]
+    fn toggle_mode_command_to_normal() {
+        let mut st = new_state();
+        st.mode = Mode::Command;
+        let snap = st.toggle_mode();
+        assert_eq!(snap.mode, Mode::Normal);
+    }
+
+    // -- enter_command ----------------------------------------------------
+
+    #[test]
+    fn enter_command_from_normal_succeeds() {
+        let mut st = new_state();
+        let snap = st.enter_command();
+        assert!(snap.is_some());
+        assert_eq!(snap.unwrap().mode, Mode::Command);
+    }
+
+    #[test]
+    fn enter_command_from_command_is_noop() {
+        let mut st = new_state();
+        st.mode = Mode::Command;
+        assert!(st.enter_command().is_none());
+    }
+
+    // -- enter_normal -----------------------------------------------------
+
+    #[test]
+    fn enter_normal_from_command_succeeds() {
+        let mut st = new_state();
+        st.mode = Mode::Command;
+        let snap = st.enter_normal();
+        assert!(snap.is_some());
+        assert_eq!(snap.unwrap().mode, Mode::Normal);
+    }
+
+    #[test]
+    fn enter_normal_from_normal_is_noop() {
+        let mut st = new_state();
+        assert!(st.enter_normal().is_none());
+    }
+
+    // -- add_buffer -------------------------------------------------------
+
+    #[test]
+    fn add_buffer_appends_and_activates() {
+        let mut st = new_state();
+        let snap = st.add_buffer("https://example.com".to_owned());
+        assert_eq!(snap.buffers.len(), 2);
+        assert_eq!(snap.active, 1);
+        assert_eq!(snap.buffers[1].url, "https://example.com");
+    }
+
+    #[test]
+    fn add_buffer_increments_id() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        assert_eq!(st.next_id, 3);
+        st.add_buffer("https://b.com".to_owned());
+        assert_eq!(st.next_id, 4);
+    }
+
+    #[test]
+    fn add_buffer_resets_mode_to_normal() {
+        let mut st = new_state();
+        st.mode = Mode::Command;
+        let snap = st.add_buffer("https://x.com".to_owned());
+        assert_eq!(snap.mode, Mode::Normal);
+    }
+
+    // -- navigate_active ---------------------------------------------------
+
+    #[test]
+    fn navigate_active_updates_url() {
+        let mut st = new_state();
+        let snap = st.navigate_active("https://rust-lang.org".to_owned());
+        assert_eq!(snap.buffers[0].url, "https://rust-lang.org");
+        assert!(snap.buffers[0].title.is_empty());
+    }
+
+    #[test]
+    fn navigate_active_resets_mode_to_normal() {
+        let mut st = new_state();
+        st.mode = Mode::Command;
+        let snap = st.navigate_active("https://example.com".to_owned());
+        assert_eq!(snap.mode, Mode::Normal);
+    }
+
+    #[test]
+    fn navigate_active_creates_buffer_if_empty() {
+        let mut st = AppState {
+            mode: Mode::Normal,
+            buffers: vec![],
+            active: 0,
+            next_id: 1,
+        };
+        let snap = st.navigate_active("https://new.com".to_owned());
+        assert_eq!(snap.buffers.len(), 1);
+        assert_eq!(snap.buffers[0].url, "https://new.com");
+    }
+
+    // -- cycle_buffer -----------------------------------------------------
+
+    #[test]
+    fn cycle_buffer_forward() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        st.add_buffer("https://b.com".to_owned());
+        st.active = 0;
+        let (snap, url) = st.cycle_buffer(1).unwrap();
+        assert_eq!(snap.active, 1);
+        assert_eq!(url, "https://a.com");
+    }
+
+    #[test]
+    fn cycle_buffer_wraps_around() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        // active is now 1 (last added)
+        let (snap, url) = st.cycle_buffer(1).unwrap();
+        assert_eq!(snap.active, 0);
+        assert_eq!(url, "about:blank");
+    }
+
+    #[test]
+    fn cycle_buffer_backward() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        st.active = 0;
+        let (snap, _) = st.cycle_buffer(-1).unwrap();
+        assert_eq!(snap.active, 1);
+    }
+
+    #[test]
+    fn cycle_buffer_empty_returns_none() {
+        let mut st = AppState {
+            mode: Mode::Normal,
+            buffers: vec![],
+            active: 0,
+            next_id: 1,
+        };
+        assert!(st.cycle_buffer(1).is_none());
+    }
+
+    // -- set_active_title -------------------------------------------------
+
+    #[test]
+    fn set_active_title_updates_title() {
+        let mut st = new_state();
+        let snap = st.set_active_title("My Page".to_owned());
+        assert_eq!(snap.buffers[0].title, "My Page");
+    }
+
+    // -- close_active_buffer ----------------------------------------------
+
+    #[test]
+    fn close_last_buffer_resets_to_blank() {
+        let mut st = new_state();
+        let (snap, url) = st.close_active_buffer();
+        assert_eq!(snap.buffers.len(), 1);
+        assert_eq!(snap.buffers[0].url, "about:blank");
+        assert_eq!(url, "about:blank");
+    }
+
+    #[test]
+    fn close_buffer_removes_and_navigates() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        st.add_buffer("https://b.com".to_owned());
+        // active = 2 (last added, index 2)
+        let (snap, url) = st.close_active_buffer();
+        assert_eq!(snap.buffers.len(), 2);
+        // should navigate to the previous buffer
+        assert!(!url.is_empty());
+    }
+
+    #[test]
+    fn close_buffer_adjusts_active_index() {
+        let mut st = new_state();
+        st.add_buffer("https://a.com".to_owned());
+        // active = 1
+        let (snap, _) = st.close_active_buffer();
+        assert_eq!(snap.active, 0);
+    }
+
+    #[test]
+    fn close_empty_buffers_creates_blank() {
+        let mut st = AppState {
+            mode: Mode::Normal,
+            buffers: vec![],
+            active: 0,
+            next_id: 1,
+        };
+        let (snap, url) = st.close_active_buffer();
+        assert_eq!(snap.buffers.len(), 1);
+        assert_eq!(url, "about:blank");
+    }
+
+    // -- ManagedState -----------------------------------------------------
+
+    #[test]
+    fn managed_state_lock_succeeds() {
+        let ms = ManagedState(Mutex::new(new_state()));
+        assert!(ms.lock_or_err().is_ok());
+    }
+}

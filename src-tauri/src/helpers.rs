@@ -45,3 +45,28 @@ pub fn set_focus_for_mode(app: &AppHandle, mode: Mode) {
         let _ = wv.set_focus();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_url_with_scheme_unchanged() {
+        assert_eq!(normalize_url("https://example.com"), "https://example.com");
+        assert_eq!(normalize_url("http://example.com"), "http://example.com");
+    }
+
+    #[test]
+    fn normalize_url_without_scheme_adds_https() {
+        assert_eq!(normalize_url("example.com"), "https://example.com");
+        assert_eq!(
+            normalize_url("rust-lang.org/learn"),
+            "https://rust-lang.org/learn"
+        );
+    }
+
+    #[test]
+    fn normalize_url_empty_string() {
+        assert_eq!(normalize_url(""), "https://");
+    }
+}
