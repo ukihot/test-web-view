@@ -52,11 +52,14 @@ pub fn navigate_to(
         .map_err(|e: url::ParseError| e.to_string())?;
 
     let mut st = state.lock_or_err()?;
-    let snap = if new_buffer.unwrap_or(false) {
-        st.add_buffer(normalized.clone())
+    if new_buffer.unwrap_or(false) {
+        st.add_buffer(normalized.clone());
     } else {
-        st.navigate_active(normalized.clone())
+        st.navigate_active(normalized.clone());
     };
+    st.mode = Mode::Normal;
+    let snap = st.snapshot();
+    drop(st);
     emit_snapshot(&app, &snap);
     emit_to_ui(&app, "page-load-start", &normalized);
 
@@ -70,15 +73,27 @@ pub fn navigate_to(
 
 #[tauri::command]
 pub fn buffer_next(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
-    let (snap, nav_url) = state.lock_or_err()?.cycle_buffer(1).ok_or("no buffers")?;
+    let mut st = state.lock_or_err()?;
+    let (_, nav_url) = st.cycle_buffer(1).ok_or("no buffers")?;
+    st.mode = Mode::Normal;
+    let snap = st.snapshot();
+    let nav_url = nav_url.clone();
+    drop(st);
     emit_snapshot(&app, &snap);
+    set_focus_for_mode(&app, Mode::Normal);
     navigate_browser(&app, &nav_url)
 }
 
 #[tauri::command]
 pub fn buffer_prev(app: AppHandle, state: State<'_, ManagedState>) -> Result<(), String> {
-    let (snap, nav_url) = state.lock_or_err()?.cycle_buffer(-1).ok_or("no buffers")?;
+    let mut st = state.lock_or_err()?;
+    let (_, nav_url) = st.cycle_buffer(-1).ok_or("no buffers")?;
+    st.mode = Mode::Normal;
+    let snap = st.snapshot();
+    let nav_url = nav_url.clone();
+    drop(st);
     emit_snapshot(&app, &snap);
+    set_focus_for_mode(&app, Mode::Normal);
     navigate_browser(&app, &nav_url)
 }
 
