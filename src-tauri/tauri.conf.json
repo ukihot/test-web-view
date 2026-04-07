@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "test-web-view",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "identifier": "com.tokunagay.test-web-view",
   "build": {
     "beforeDevCommand": "",
@@ -18,6 +18,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -25,5 +26,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBMERFQzY4OUIwQjUzNTEKUldSUlV3dWJhT3dOT3JKclU3cnlBeFpxeDBOSGFUMXJ3YWFXMHMwTUg3TE9PQTZRdWRzeGJGV20K",
+      "endpoints": [
+        "https://github.com/ukihot/test-web-view/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

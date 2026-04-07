@@ -14,6 +14,12 @@ pub fn get_state(state: State<'_, ManagedState>) -> Result<Snapshot, String> {
 }
 
 #[tauri::command]
+pub fn browser_ping(state: State<'_, ManagedState>) -> Result<(), String> {
+    state.lock_or_err()?.browser_ipc_ok = true;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn toggle_mode(app: AppHandle, state: State<'_, ManagedState>) -> Result<Snapshot, String> {
     let snap = state.lock_or_err()?.toggle_mode();
     emit_snapshot(&app, &snap);
@@ -58,6 +64,7 @@ pub fn navigate_to(
         st.navigate_active(normalized.clone());
     };
     st.mode = Mode::Normal;
+    st.browser_ipc_ok = false;
     let snap = st.snapshot();
     drop(st);
     emit_snapshot(&app, &snap);
@@ -76,6 +83,7 @@ pub fn buffer_next(app: AppHandle, state: State<'_, ManagedState>) -> Result<(),
     let mut st = state.lock_or_err()?;
     let (_, nav_url) = st.cycle_buffer(1).ok_or("no buffers")?;
     st.mode = Mode::Normal;
+    st.browser_ipc_ok = false;
     let snap = st.snapshot();
     let nav_url = nav_url.clone();
     drop(st);
@@ -89,6 +97,7 @@ pub fn buffer_prev(app: AppHandle, state: State<'_, ManagedState>) -> Result<(),
     let mut st = state.lock_or_err()?;
     let (_, nav_url) = st.cycle_buffer(-1).ok_or("no buffers")?;
     st.mode = Mode::Normal;
+    st.browser_ipc_ok = false;
     let snap = st.snapshot();
     let nav_url = nav_url.clone();
     drop(st);

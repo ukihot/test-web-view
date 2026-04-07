@@ -1,6 +1,6 @@
 use tauri::{
     LogicalPosition, LogicalSize, Manager, WebviewUrl, WindowEvent,
-    webview::{PageLoadEvent, WebviewBuilder},
+    webview::WebviewBuilder,
     window::WindowBuilder,
 };
 
@@ -8,14 +8,17 @@ use crate::{
     commands,
     constants::{BROWSER_LABEL, STATUS_H, UI_LABEL},
     domain::{Buffer, Mode},
-    helpers::emit_to_ui,
     scripts::{ACTIVITY_INIT_SCRIPT, BROWSER_INIT_SCRIPT},
     state::{AppState, ManagedState},
+    updater,
+    webview,
 };
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(ManagedState(std::sync::Mutex::new(AppState {
             mode: Mode::default(),
             buffers: vec![Buffer {
@@ -25,9 +28,11 @@ pub fn run() {
             }],
             active: 0,
             next_id: 2,
+            browser_ipc_ok: false,
         })))
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
+            commands::browser_ping,
             commands::toggle_mode,
             commands::enter_command,
             commands::enter_normal,
@@ -41,8 +46,9 @@ pub fn run() {
             commands::report_auth_tokens,
         ])
         .setup(|app| {
+            let version = app.config().version.clone().unwrap_or_default();
             let win = WindowBuilder::new(app, "main")
-                .title("vim-browser")
+                .title(format!("vim-browser v{version}"))
                 .inner_size(1200.0, 800.0)
                 .build()?;
 
@@ -60,54 +66,7 @@ pub fn run() {
                 .initialization_script(BROWSER_INIT_SCRIPT)
                 .initialization_script(ACTIVITY_INIT_SCRIPT)
                 .on_page_load(move |wv, payload| {
-                    let url = payload.url().to_string();
-                    if url == "about:blank" {
-                        return;
-                    }
-                    match payload.event() {
-                        PageLoadEvent::Started => {
-                            emit_to_ui(&app_handle, "page-load-start", &url);
-                        }
-                        PageLoadEvent::Finished => {
-                            emit_to_ui(&app_handle, "page-load-finish", &url);
-                            let _ = wv.eval(concat!(
-                                "(function(){",
-                                "  if(!window.__TAURI__?.core) return;",
-                                "  window.__TAURI__.core.invoke('report_title',",
-                                "    {title:document.title||''}).catch(function(){});",
-                                "})();"
-                            ));
-                            let _ = wv.eval(concat!(
-                                "(function(){",
-                                "  if(!window.__TAURI__?.core) return;",
-                                "  var entries=performance.getEntriesByType('resource').map(function(e){",
-                                "    return{name:e.name,duration:Math.round(e.duration),",
-                                "      transfer_size:e.transferSize||0,initiator_type:e.initiatorType};",
-                                "  });",
-                                "  window.__TAURI__.core.invoke('report_resources',",
-                                "    {resources:entries}).catch(function(){});",
-                                "})();"
-                            ));
-                            let _ = wv.eval(concat!(
-                                "(function(){",
-                                "  if(!window.__TAURI__?.core) return;",
-                                "  var RE=/token|session|auth|jwt|sid|csrf|api.?key|access|bearer|refresh|sso|oidc|saml/i;",
-                                "  var t=[];",
-                                "  try{(document.cookie||'').split(';').forEach(function(c){",
-                                "    var n=c.split('=')[0].trim(); if(RE.test(n)) t.push('c:'+n);",
-                                "  });}catch(_){}",
-                                "  try{for(var i=0;i<localStorage.length;i++){",
-                                "    var k=localStorage.key(i); if(RE.test(k)) t.push('ls:'+k);",
-                                "  }}catch(_){}",
-                                "  try{for(var i=0;i<sessionStorage.length;i++){",
-                                "    var k=sessionStorage.key(i); if(RE.test(k)) t.push('ss:'+k);",
-                                "  }}catch(_){}",
-                                "  window.__TAURI__.core.invoke('report_auth_tokens',",
-                                "    {tokens:t}).catch(function(){});",
-                                "})();"
-                            ));
-                        }
-                    }
+                    webview::handle_page_load(&app_handle, &wv, &payload);
                 }),
                 LogicalPosition::new(0.0, 0.0),
                 LogicalSize::new(w, h),
@@ -147,6 +106,9 @@ pub fn run() {
                     let _ = ui.set_focus();
                 }
             });
+
+            // バックグラウンドでアップデートチェック
+            updater::spawn_update_check(app.handle().clone());
 
             Ok(())
         })

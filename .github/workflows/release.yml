@@ -103,6 +103,9 @@ jobs:
 
       - name: Build bundle
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: cargo tauri build
 
       - name: Create tag (workflow_dispatch only)
@@ -133,11 +136,15 @@ jobs:
 
           find target/release/bundle -type f \( \
             -name "*.msi" -o \
+            -name "*.msi.sig" -o \
             -name "*.exe" -o \
+            -name "*.exe.sig" -o \
             -name "*.zip" -o \
             -name "*.dmg" -o \
             -name "*.deb" -o \
-            -name "*.AppImage" \) > release-assets.txt
+            -name "*.AppImage" -o \
+            -name "*.AppImage.sig" -o \
+            -name "latest.json" \) > release-assets.txt
 
           if [[ ! -s release-assets.txt ]]; then
             echo "No bundle artifacts found"
@@ -152,8 +159,12 @@ jobs:
           generate_release_notes: true
           files: |
             target/release/bundle/**/*.msi
+            target/release/bundle/**/*.msi.sig
             target/release/bundle/**/*.exe
+            target/release/bundle/**/*.exe.sig
             target/release/bundle/**/*.zip
             target/release/bundle/**/*.dmg
             target/release/bundle/**/*.deb
             target/release/bundle/**/*.AppImage
+            target/release/bundle/**/*.AppImage.sig
+            target/release/bundle/**/latest.json

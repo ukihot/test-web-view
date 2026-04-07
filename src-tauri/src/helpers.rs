@@ -37,12 +37,41 @@ pub fn navigate_browser(app: &AppHandle, url: &str) -> Result<(), String> {
 }
 
 pub fn set_focus_for_mode(app: &AppHandle, mode: Mode) {
-    let label = match mode {
-        Mode::Command => UI_LABEL,
-        Mode::Normal => BROWSER_LABEL,
-    };
-    if let Some(wv) = app.get_webview(label) {
-        let _ = wv.set_focus();
+    match mode {
+        Mode::Command => {
+            if let Some(wv) = app.get_webview(UI_LABEL) {
+                let _ = wv.set_focus();
+            }
+        }
+        Mode::Normal => {
+            if let Some(browser) = app.get_webview(BROWSER_LABEL) {
+                let _ = browser.set_focus();
+                // Reset the IPC flag before probing.
+                if let Ok(mut guard) = app.state::<crate::state::ManagedState>().lock_or_err() {
+                    guard.browser_ipc_ok = false;
+                }
+                // On error pages the Tauri IPC bridge is unavailable.
+                // Schedule a ping probe: if browser doesn't respond within
+                // 200ms, fall back to UI which always has a keydown handler.
+                let _ = browser.eval(
+                    "(function(){try{if(window.__TAURI__&&window.__TAURI__.core){window.__TAURI__.core.invoke('browser_ping').catch(function(){})}}catch(_){}})()",
+                );
+                let handle = app.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                    let managed = handle.state::<crate::state::ManagedState>();
+                    let st = managed.lock_or_err();
+                    if let Ok(guard) = st
+                        && guard.browser_ipc_ok {
+                            return; // ping arrived, browser has IPC — keep focus
+                        }
+                    // No ping received — fall back to UI
+                    if let Some(ui) = handle.get_webview(UI_LABEL) {
+                        let _ = ui.set_focus();
+                    }
+                });
+            }
+        }
     }
 }
 

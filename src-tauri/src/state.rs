@@ -7,6 +7,7 @@ pub struct AppState {
     pub buffers: Vec<Buffer>,
     pub active: usize,
     pub next_id: usize,
+    pub browser_ipc_ok: bool,
 }
 
 impl AppState {
@@ -131,6 +132,7 @@ mod tests {
             }],
             active: 0,
             next_id: 2,
+            browser_ipc_ok: false,
         }
     }
 
@@ -249,6 +251,7 @@ mod tests {
             buffers: vec![],
             active: 0,
             next_id: 1,
+            browser_ipc_ok: false,
         };
         let snap = st.navigate_active("https://new.com".to_owned());
         assert_eq!(snap.buffers.len(), 1);
@@ -294,6 +297,7 @@ mod tests {
             buffers: vec![],
             active: 0,
             next_id: 1,
+            browser_ipc_ok: false,
         };
         assert!(st.cycle_buffer(1).is_none());
     }
@@ -346,6 +350,7 @@ mod tests {
             buffers: vec![],
             active: 0,
             next_id: 1,
+            browser_ipc_ok: false,
         };
         let (snap, url) = st.close_active_buffer();
         assert_eq!(snap.buffers.len(), 1);
