@@ -254,6 +254,7 @@ mod tests {
             active: 0,
             next_id: 1,
             browser_ipc_ok: false,
+            update_tx: None,
         };
         let snap = st.navigate_active("https://new.com".to_owned());
         assert_eq!(snap.buffers.len(), 1);
@@ -300,6 +301,7 @@ mod tests {
             active: 0,
             next_id: 1,
             browser_ipc_ok: false,
+            update_tx: None,
         };
         assert!(st.cycle_buffer(1).is_none());
     }
@@ -353,6 +355,7 @@ mod tests {
             active: 0,
             next_id: 1,
             browser_ipc_ok: false,
+            update_tx: None,
         };
         let (snap, url) = st.close_active_buffer();
         assert_eq!(snap.buffers.len(), 1);
