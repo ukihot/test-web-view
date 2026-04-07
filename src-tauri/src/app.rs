@@ -5,7 +5,7 @@ use tauri::{
 
 use crate::{
     commands,
-    constants::{BROWSER_LABEL, STATUS_H, UI_LABEL},
+    constants::{BROWSER_LABEL, ENABLE_UPDATER, STATUS_H, UI_LABEL},
     domain::{Buffer, Mode},
     scripts::{ACTIVITY_INIT_SCRIPT, BROWSER_INIT_SCRIPT},
     state::{AppState, ManagedState},
@@ -13,10 +13,15 @@ use crate::{
 };
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_process::init());
+
+    if ENABLE_UPDATER {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
         .manage(ManagedState(std::sync::Mutex::new(AppState {
             mode: Mode::default(),
             buffers: vec![Buffer {
@@ -109,7 +114,9 @@ pub fn run() {
             });
 
             // バックグラウンドでアップデートチェック
-            updater::spawn_update_check(app.handle().clone());
+            if ENABLE_UPDATER {
+                updater::spawn_update_check(app.handle().clone());
+            }
 
             Ok(())
         })

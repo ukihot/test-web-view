@@ -46,11 +46,10 @@ pub fn spawn_update_check(handle: AppHandle) {
                     }
                 }
 
-                let accepted = tauri::async_runtime::spawn_blocking(move || {
-                    rx.recv().unwrap_or(false)
-                })
-                .await
-                .unwrap_or(false);
+                let accepted =
+                    tauri::async_runtime::spawn_blocking(move || rx.recv().unwrap_or(false))
+                        .await
+                        .unwrap_or(false);
 
                 if !accepted {
                     emit_to_ui(&handle, "update-status", &"update skipped");
