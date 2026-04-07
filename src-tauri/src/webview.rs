@@ -1,17 +1,13 @@
-use tauri::{AppHandle, Webview};
 use tauri::webview::PageLoadPayload;
+use tauri::{AppHandle, Webview};
 
-use crate::{
-    constants::UI_LABEL,
-    helpers::emit_to_ui,
-    state::ManagedState,
-};
+use crate::{constants::UI_LABEL, helpers::emit_to_ui, state::ManagedState};
 
 /// `on_page_load` コールバックの本体。
 /// ページ読み込みイベントを処理し、IPC プローブや各種レポートを実行する。
 pub fn handle_page_load(app_handle: &AppHandle, wv: &Webview, payload: &PageLoadPayload<'_>) {
-    use tauri::webview::PageLoadEvent;
     use tauri::Manager;
+    use tauri::webview::PageLoadEvent;
 
     let url = payload.url().to_string();
     if url == "about:blank" {
@@ -40,9 +36,10 @@ pub fn handle_page_load(app_handle: &AppHandle, wv: &Webview, payload: &PageLoad
                 std::thread::sleep(std::time::Duration::from_millis(200));
                 let managed = probe_handle.state::<ManagedState>();
                 if let Ok(guard) = managed.lock_or_err()
-                    && guard.browser_ipc_ok {
-                        return;
-                    }
+                    && guard.browser_ipc_ok
+                {
+                    return;
+                }
                 if let Some(ui) = probe_handle.get_webview(UI_LABEL) {
                     let _ = ui.set_focus();
                 }

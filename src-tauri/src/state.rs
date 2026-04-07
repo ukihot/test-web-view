@@ -8,6 +8,7 @@ pub struct AppState {
     pub active: usize,
     pub next_id: usize,
     pub browser_ipc_ok: bool,
+    pub update_tx: Option<std::sync::mpsc::Sender<bool>>,
 }
 
 impl AppState {
@@ -133,6 +134,7 @@ mod tests {
             active: 0,
             next_id: 2,
             browser_ipc_ok: false,
+            update_tx: None,
         }
     }
 

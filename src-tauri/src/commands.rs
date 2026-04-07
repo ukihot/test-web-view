@@ -142,3 +142,11 @@ pub fn report_auth_tokens(app: AppHandle, tokens: Vec<String>) -> Result<(), Str
     emit_to_ui(&app, "auth-tokens", &tokens);
     Ok(())
 }
+
+#[tauri::command]
+pub fn respond_update(state: State<'_, ManagedState>, accepted: bool) -> Result<(), String> {
+    if let Some(tx) = state.lock_or_err()?.update_tx.take() {
+        let _ = tx.send(accepted);
+    }
+    Ok(())
+}

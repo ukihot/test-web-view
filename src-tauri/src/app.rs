@@ -1,6 +1,5 @@
 use tauri::{
-    LogicalPosition, LogicalSize, Manager, WebviewUrl, WindowEvent,
-    webview::WebviewBuilder,
+    LogicalPosition, LogicalSize, Manager, WebviewUrl, WindowEvent, webview::WebviewBuilder,
     window::WindowBuilder,
 };
 
@@ -10,8 +9,7 @@ use crate::{
     domain::{Buffer, Mode},
     scripts::{ACTIVITY_INIT_SCRIPT, BROWSER_INIT_SCRIPT},
     state::{AppState, ManagedState},
-    updater,
-    webview,
+    updater, webview,
 };
 
 pub fn run() {
@@ -29,6 +27,7 @@ pub fn run() {
             active: 0,
             next_id: 2,
             browser_ipc_ok: false,
+            update_tx: None,
         })))
         .invoke_handler(tauri::generate_handler![
             commands::get_state,
@@ -44,6 +43,7 @@ pub fn run() {
             commands::report_resources,
             commands::report_activity,
             commands::report_auth_tokens,
+            commands::respond_update,
         ])
         .setup(|app| {
             let version = app.config().version.clone().unwrap_or_default();
@@ -74,7 +74,8 @@ pub fn run() {
 
             // UI webview status bar at bottom.
             win.add_child(
-                WebviewBuilder::new(UI_LABEL, WebviewUrl::App("index.html".into())).transparent(true),
+                WebviewBuilder::new(UI_LABEL, WebviewUrl::App("index.html".into()))
+                    .transparent(true),
                 LogicalPosition::new(0.0, h - STATUS_H),
                 LogicalSize::new(w, STATUS_H),
             )?;

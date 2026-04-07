@@ -62,9 +62,10 @@ pub fn set_focus_for_mode(app: &AppHandle, mode: Mode) {
                     let managed = handle.state::<crate::state::ManagedState>();
                     let st = managed.lock_or_err();
                     if let Ok(guard) = st
-                        && guard.browser_ipc_ok {
-                            return; // ping arrived, browser has IPC — keep focus
-                        }
+                        && guard.browser_ipc_ok
+                    {
+                        return; // ping arrived, browser has IPC — keep focus
+                    }
                     // No ping received — fall back to UI
                     if let Some(ui) = handle.get_webview(UI_LABEL) {
                         let _ = ui.set_focus();
