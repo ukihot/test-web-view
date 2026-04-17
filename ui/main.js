@@ -244,44 +244,6 @@ class ActivityTicker {
 const activityTicker = new ActivityTicker(dom.activityReel);
 
 // ---------------------------------------------------------------------------
-// Update status — center area shows update progress until done
-// ---------------------------------------------------------------------------
-
-let updateDone = false;
-let updatePending = false; // waiting for Y/N response
-
-function showUpdateRow(text) {
-  while (dom.activityReel.firstChild) {
-    dom.activityReel.removeChild(dom.activityReel.firstChild);
-  }
-  const row = document.createElement("div");
-  row.className = "act-row act-net";
-  row.innerHTML = `<span class="act-tag">update</span>` +
-    `<span class="act-detail">${text}</span>`;
-  dom.activityReel.appendChild(row);
-}
-
-listen("update-status", (e) => {
-  if (updateDone) return;
-  updatePending = false;
-  showUpdateRow(e.payload);
-});
-
-listen("update-available", (e) => {
-  const { version, current } = e.payload;
-  updatePending = true;
-  showUpdateRow(`v${version} available (now v${current}) — Y:upgrade N:skip`);
-});
-
-listen("update-done", () => {
-  updateDone = true;
-  updatePending = false;
-  setTimeout(() => {
-    activityTicker.clear();
-  }, 1500);
-});
-
-// ---------------------------------------------------------------------------
 // Application state
 // ---------------------------------------------------------------------------
 
@@ -391,7 +353,6 @@ listen("resource-log", (e) => {
 });
 
 listen("activity-log", (e) => {
-  if (!updateDone) return;
   activityTicker.push(e.payload);
 });
 
@@ -472,24 +433,6 @@ const COMMAND_KEYS = Object.freeze({
 
 document.addEventListener("keydown", (e) => {
   if (state.inputOpen || e.isComposing) return;
-
-  // Update confirmation: Y/N intercept
-  if (updatePending) {
-    if (e.key === "y" || e.key === "Y") {
-      e.preventDefault();
-      updatePending = false;
-      showUpdateRow("upgrading...");
-      invoke("respond_update", { accepted: true });
-      return;
-    }
-    if (e.key === "n" || e.key === "N") {
-      e.preventDefault();
-      updatePending = false;
-      invoke("respond_update", { accepted: false });
-      return;
-    }
-    // Other keys pass through to normal handling
-  }
 
   if (e.ctrlKey && (e.key === "w" || e.key === "W")) {
     e.preventDefault();
