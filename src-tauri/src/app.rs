@@ -74,7 +74,7 @@ pub fn run() {
                     webview::handle_page_load(&app_handle, &wv, &payload);
                 }),
                 LogicalPosition::new(0.0, 0.0),
-                LogicalSize::new(w, h),
+                LogicalSize::new(w, h - STATUS_H),
             )?;
 
             // UI webview status bar at bottom.
@@ -94,7 +94,7 @@ pub fn run() {
                 {
                     let s = phys.to_logical::<f64>(scale);
                     if let Some(browser) = resize_handle.get_webview(BROWSER_LABEL) {
-                        let _ = browser.set_size(LogicalSize::new(s.width, s.height));
+                        let _ = browser.set_size(LogicalSize::new(s.width, s.height - STATUS_H));
                     }
                     if let Some(ui) = resize_handle.get_webview(UI_LABEL) {
                         let _ = ui.set_position(LogicalPosition::new(0.0, s.height - STATUS_H));
